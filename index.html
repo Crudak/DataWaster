@@ -8,26 +8,63 @@
         body { 
             font-family: 'Courier New', Courier, monospace; 
             text-align: center; 
-            padding: 50px; 
-            background: #0d0d0d; 
+            padding: 40px 20px; 
+            background: #0b0b0f; 
             color: #39ff14; 
             text-shadow: 0 0 5px #39ff14;
         }
         h1 {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             letter-spacing: 2px;
+            margin-bottom: 5px;
         }
         .container {
             border: 2px dashed #39ff14;
             padding: 30px;
             display: inline-block;
-            background: #151515;
-            box-shadow: 0 0 15px rgba(57, 255, 20, 0.2);
-            border-radius: 8px;
-            min-width: 350px;
+            background: #111116;
+            box-shadow: 0 0 25px rgba(57, 255, 20, 0.15);
+            border-radius: 12px;
+            min-width: 340px;
+            max-width: 450px;
         }
+        
+        /* Speedtest Style Gauge Area */
+        .gauge-zone {
+            position: relative;
+            width: 200px;
+            height: 100px;
+            margin: 20px auto;
+            border-bottom: 4px solid #222;
+            overflow: hidden;
+        }
+        .gauge-arc {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            border: 6px solid #222;
+            border-top-color: #00ffff;
+            border-right-color: #39ff14;
+            box-sizing: border-box;
+        }
+        .gauge-needle {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 4px;
+            height: 85px;
+            background: #ff0055;
+            box-shadow: 0 0 8px #ff0055;
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(-90deg);
+            transition: transform 0.25s cubic-bezier(0.1, 0.8, 0.3, 1);
+        }
+        
         button { 
-            padding: 15px 30px; 
+            padding: 15px 35px; 
             font-size: 18px; 
             font-family: inherit;
             font-weight: bold;
@@ -35,40 +72,17 @@
             background: #ff0055; 
             color: black; 
             border: none; 
-            border-radius: 3px;
-            box-shadow: 0 0 10px #ff0055;
+            border-radius: 4px;
+            box-shadow: 0 0 12px #ff0055;
             transition: all 0.2s ease;
-            margin-bottom: 15px;
+            margin-top: 10px;
         }
         button:hover {
-            transform: scale(1.05);
+            transform: scale(1.03);
         }
-        #status { margin-top: 25px; font-size: 22px; color: #00ffff; text-shadow: 0 0 5px #00ffff; }
         
-        /* Streaming visual effect */
-        .stream-bar {
-            width: 100%;
-            height: 4px;
-            background: #222;
-            margin: 15px 0;
-            overflow: hidden;
-            position: relative;
-            display: none;
-        }
-        .stream-bar::after {
-            content: '';
-            position: absolute;
-            left: -150%;
-            width: 150%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, #39ff14, transparent);
-            animation: streaming 0.8s linear infinite;
-        }
-        @keyframes streaming {
-            0% { left: -150%; }
-            100% { left: 100%; }
-        }
-
+        #status { margin-top: 20px; font-size: 20px; color: #00ffff; text-shadow: 0 0 5px #00ffff; }
+        
         .stats-grid {
             margin-top: 20px;
             font-size: 18px;
@@ -79,32 +93,43 @@
             width: fit-content;
             margin-left: auto;
             margin-right: auto;
+            background: #000;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #333;
         }
         .highlight { color: #ffff00; text-shadow: 0 0 5px #ffff00; }
+        .speed-heavy { font-size: 26px; color: #39ff14; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>[ 3L1T3 D474 W4573R v1.337 ]</h1>
-        <p>7H15 700L C0N5UM35 Y0UR N37W0RK B4NDW1D7H f0r fUn.</p>
+        <h1>[ D474 W4573R v2.0 ]</h1>
+        <p style="color: #888; font-size: 12px;">R34L-71M3 5L1D1NG W1ND0W 74CH0M373R</p>
         
-        <button id="toggleBtn" onclick="toggleWasting()">1N171473 d0wnl04d</button>
-        
-        <div id="streamIndicator" class="stream-bar"></div>
+        <div class="gauge-zone">
+            <div class="gauge-arc"></div>
+            <div id="needle" class="gauge-needle"></div>
+        </div>
 
+        <button id="toggleBtn" onclick="toggleWasting()">1N171473 7357</button>
+        
         <div id="status">5747U5: 1DL3</div>
         
         <div class="stats-grid">
+            <div id="speed" class="speed-heavy">5P33D: <span class="highlight">0.00 Mbp5</span></div>
             <div id="counter">7074L BURN3D: <span class="highlight">0.00 MB</span></div>
-            <div id="speed">CUMUL471V3 5P33D: <span class="highlight">0.00 Mbp5</span></div>
         </div>
     </div>
 
     <script>
         let isWasting = false;
         let totalBytesWasted = 0;
-        let startTime = null;
+        
+        // Sliding window tracking mechanics
+        let windowBytes = 0;
+        let speedIntervalId = null;
         
         // 100MB chunk payload from Cloudflare
         const targetUrl = 'https://speed.cloudflare.com/__down?bytes=104857600'; 
@@ -112,64 +137,87 @@
         async function wasteData() {
             while (isWasting) {
                 try {
-                    // Generate a cache-buster string so the browser never uses local cache
                     const uniqueUrl = `${targetUrl}&t=${Date.now()}_${Math.random()}`;
-                    
                     const response = await fetch(uniqueUrl);
-                    if (!response.ok) throw new Error("D0wnl04d bR0k3n");
+                    if (!response.ok) throw new Error("Network dropout");
 
                     const reader = response.body.getReader();
                     
                     while (isWasting) {
                         const { done, value } = await reader.read();
-                        if (done) break; // Finished this 100MB chunk, loop will instantly start the next one
+                        if (done) break;
                         
-                        totalBytesWasted += value.length;
+                        const chunkLength = value.length;
+                        totalBytesWasted += chunkLength;
+                        windowBytes += chunkLength; // Track inside the current 1-second window
                         
-                        // Calculate live metrics down to the millisecond
-                        const elapsedSeconds = (Date.now() - startTime) / 1000;
+                        // Render total data burned instantly chunk by chunk
                         const totalMB = totalBytesWasted / (1024 * 1024);
-                        
-                        // Mbps formula: (Total Bits / 1,000,000) / Elapsed Seconds
-                        const totalBits = totalBytesWasted * 8;
-                        const currentMbps = elapsedSeconds > 0 ? (totalBits / 1000000) / elapsedSeconds : 0;
-
-                        // UI Updates dynamically on every micro-packet
                         document.getElementById('counter').innerHTML = `7074L BURN3D: <span class="highlight">${totalMB.toFixed(2)} MB</span>`;
-                        document.getElementById('speed').innerHTML = `CUMUL471V3 5P33D: <span class="highlight">${currentMbps.toFixed(2)} Mbp5</span>`;
                     }
                 } catch (error) {
-                    console.error("3rr0r w4571ng d474:", error);
-                    // Prevent thread locking if connection fails
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    console.error("Stream catch up:", error);
+                    await new Promise(resolve => setTimeout(resolve, 300));
                 }
             }
+        }
+
+        // Speedtest style window calculations (Executes exactly every 1000ms)
+        function startSpeedometer() {
+            speedIntervalId = setInterval(() => {
+                // Calculate Mbps explicitly based on data loaded inside the past 1000ms window
+                const bitsInWindow = windowBytes * 8;
+                const currentMbps = bitsInWindow / 1000000;
+                
+                // Reset the window bucket immediately for the next second interval
+                windowBytes = 0;
+
+                // Render live calculated speed
+                document.getElementById('speed').innerHTML = `5P33D: <span class="highlight">${currentMbps.toFixed(2)} Mbp5</span>`;
+                
+                // Update the gauge needle position
+                // Mapping speed from 0 Mbps to a 200 Mbps scale into a -90 deg to +90 deg arc
+                const maxExpectedSpeed = 200; 
+                let degrees = (currentMbps / maxExpectedSpeed) * 180 - 90;
+                if (degrees > 90) degrees = 90; // Pin needle at absolute max max out
+                if (degrees < -90) degrees = -90;
+                
+                document.getElementById('needle').style.transform = `translateX(-50%) rotate(${degrees}deg)`;
+            }, 1000);
+        }
+
+        function stopSpeedometer() {
+            clearInterval(speedIntervalId);
+            document.getElementById('needle').style.transform = `translateX(-50%) rotate(-90deg)`;
+            document.getElementById('speed').innerHTML = `5P33D: <span class="highlight">0.00 Mbp5</span>`;
+            windowBytes = 0;
         }
 
         function toggleWasting() {
             const btn = document.getElementById('toggleBtn');
             const status = document.getElementById('status');
-            const indicator = document.getElementById('streamIndicator');
             
             isWasting = !isWasting;
             
             if (isWasting) {
-                startTime = Date.now();
                 totalBytesWasted = 0; 
+                windowBytes = 0;
                 
-                btn.innerText = "570P BURN1NG";
+                btn.innerText = "570P 7357";
                 btn.style.background = "#ffa502";
-                btn.style.boxShadow = "0 0 10px #ffa502";
-                status.innerText = "5747U5: d0wnl04d1ng_";
-                indicator.style.display = "block";
+                btn.style.boxShadow = "0 0 12px #ffa502";
+                status.innerText = "5747U5: 73571NG_";
                 
+                startSpeedometer();
                 wasteData();
             } else {
-                btn.innerText = "1N171473 d0wnl04d";
+                isWasting = false;
+                btn.innerText = "1N171473 7357";
                 btn.style.background = "#ff0055";
-                btn.style.boxShadow = "0 0 10px #ff0055";
-                status.innerText = "5747U5: h4l73d";
-                indicator.style.display = "none";
+                btn.style.boxShadow = "0 0 12px #ff0055";
+                status.innerText = "5747U5: C0MPL373";
+                
+                stopSpeedometer();
             }
         }
     </script>
