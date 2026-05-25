@@ -3,219 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3L1T3 D474 W4573R</title>
+    <title>Network Speed & Data Monitor</title>
     <style>
-        body { 
-            font-family: 'Courier New', Courier, monospace; 
-            text-align: center; 
-            padding: 40px 20px; 
-            background: #0b0b0f; 
-            color: #39ff14; 
-            text-shadow: 0 0 5px #39ff14;
-        }
-        h1 {
-            font-size: 2.2rem;
-            letter-spacing: 2px;
-            margin-bottom: 5px;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            text-align: center;
+            padding: 50px 20px;
+            background-color: #f8f9fa;
+            color: #212529;
         }
         .container {
-            border: 2px dashed #39ff14;
+            max-width: 400px;
+            margin: 0 auto;
+            background: #ffffff;
             padding: 30px;
-            display: inline-block;
-            background: #111116;
-            box-shadow: 0 0 25px rgba(57, 255, 20, 0.15);
-            border-radius: 12px;
-            min-width: 340px;
-            max-width: 450px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
-        
-        /* Speedtest Style Gauge Area */
-        .gauge-zone {
-            position: relative;
-            width: 200px;
-            height: 100px;
-            margin: 20px auto;
-            border-bottom: 4px solid #222;
-            overflow: hidden;
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
         }
-        .gauge-arc {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            border: 6px solid #222;
-            border-top-color: #00ffff;
-            border-right-color: #39ff14;
-            box-sizing: border-box;
+        p {
+            color: #6c757d;
+            font-size: 14px;
+            margin-bottom: 25px;
         }
-        .gauge-needle {
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            width: 4px;
-            height: 85px;
-            background: #ff0055;
-            box-shadow: 0 0 8px #ff0055;
-            transform-origin: bottom center;
-            transform: translateX(-50%) rotate(-90deg);
-            transition: transform 0.25s cubic-bezier(0.1, 0.8, 0.3, 1);
-        }
-        
-        button { 
-            padding: 15px 35px; 
-            font-size: 18px; 
-            font-family: inherit;
-            font-weight: bold;
-            cursor: pointer; 
-            background: #ff0055; 
-            color: black; 
-            border: none; 
-            border-radius: 4px;
-            box-shadow: 0 0 12px #ff0055;
-            transition: all 0.2s ease;
-            margin-top: 10px;
+        button {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            background-color: #007bff;
+            color: white;
         }
         button:hover {
-            transform: scale(1.03);
+            background-color: #0056b3;
         }
-        
-        #status { margin-top: 20px; font-size: 20px; color: #00ffff; text-shadow: 0 0 5px #00ffff; }
-        
-        .stats-grid {
-            margin-top: 20px;
-            font-size: 18px;
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
+        button.active {
+            background-color: #dc3545;
+        }
+        button.active:hover {
+            background-color: #bd2130;
+        }
+        .stats {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
             text-align: left;
-            width: fit-content;
-            margin-left: auto;
-            margin-right: auto;
-            background: #000;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid #333;
         }
-        .highlight { color: #ffff00; text-shadow: 0 0 5px #ffff00; }
-        .speed-heavy { font-size: 26px; color: #39ff14; }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        .stat-value {
+            font-weight: bold;
+            color: #495057;
+        }
+        .speed-value {
+            color: #28a745;
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>[ D474 W4573R v2.0 ]</h1>
-        <p style="color: #888; font-size: 12px;">R34L-71M3 5L1D1NG W1ND0W 74CH0M373R</p>
+        <h1>Network Monitor</h1>
+        <p>A simple tool to test continuous download speeds and track data consumption.</p>
         
-        <div class="gauge-zone">
-            <div class="gauge-arc"></div>
-            <div id="needle" class="gauge-needle"></div>
-        </div>
-
-        <button id="toggleBtn" onclick="toggleWasting()">1N171473 7357</button>
+        <button id="toggleBtn" onclick="toggleMonitor()">Start Monitor</button>
         
-        <div id="status">5747U5: 1DL3</div>
-        
-        <div class="stats-grid">
-            <div id="speed" class="speed-heavy">5P33D: <span class="highlight">0.00 Mbp5</span></div>
-            <div id="counter">7074L BURN3D: <span class="highlight">0.00 MB</span></div>
+        <div class="stats">
+            <div class="stat-row">
+                <span>Current Speed:</span>
+                <span id="speed" class="stat-value speed-value">0.00 Mbps</span>
+            </div>
+            <div class="stat-row">
+                <span>Total Data Used:</span>
+                <span id="counter" class="stat-value">0.00 MB</span>
+            </div>
+            <div class="stat-row">
+                <span>Status:</span>
+                <span id="status" class="stat-value" style="color: #6c757d;">Idle</span>
+            </div>
         </div>
     </div>
 
     <script>
-        let isWasting = false;
-        let totalBytesWasted = 0;
-        
-        // Sliding window tracking mechanics
+        let isRunning = false;
+        let totalBytes = 0;
         let windowBytes = 0;
         let speedIntervalId = null;
         
-        // 100MB chunk payload from Cloudflare
+        // High-speed 100MB public file provided by Cloudflare
         const targetUrl = 'https://speed.cloudflare.com/__down?bytes=104857600'; 
 
-        async function wasteData() {
-            while (isWasting) {
+        async function startDownloadLoop() {
+            while (isRunning) {
                 try {
+                    // Unique parameter ensures the browser never caches the download
                     const uniqueUrl = `${targetUrl}&t=${Date.now()}_${Math.random()}`;
                     const response = await fetch(uniqueUrl);
-                    if (!response.ok) throw new Error("Network dropout");
+                    if (!response.ok) throw new Error("Connection interrupted");
 
                     const reader = response.body.getReader();
                     
-                    while (isWasting) {
+                    while (isRunning) {
                         const { done, value } = await reader.read();
-                        if (done) break;
+                        if (done) break; 
                         
-                        const chunkLength = value.length;
-                        totalBytesWasted += chunkLength;
-                        windowBytes += chunkLength; // Track inside the current 1-second window
+                        totalBytes += value.length;
+                        windowBytes += value.length; // Accumulate data for the 1-second speed window
                         
-                        // Render total data burned instantly chunk by chunk
-                        const totalMB = totalBytesWasted / (1024 * 1024);
-                        document.getElementById('counter').innerHTML = `7074L BURN3D: <span class="highlight">${totalMB.toFixed(2)} MB</span>`;
+                        // Live update total data counter chunk-by-chunk
+                        const totalMB = totalBytes / (1024 * 1024);
+                        document.getElementById('counter').innerText = `${totalMB.toFixed(2)} MB`;
                     }
                 } catch (error) {
-                    console.error("Stream catch up:", error);
-                    await new Promise(resolve => setTimeout(resolve, 300));
+                    console.error("Loop error:", error);
+                    // Brief pause on error to avoid freezing the tab
+                    await new Promise(resolve => setTimeout(resolve, 500));
                 }
             }
         }
 
-        // Speedtest style window calculations (Executes exactly every 1000ms)
+        // Calculates speed exactly every 1000ms (sliding window approach)
         function startSpeedometer() {
             speedIntervalId = setInterval(() => {
-                // Calculate Mbps explicitly based on data loaded inside the past 1000ms window
-                const bitsInWindow = windowBytes * 8;
-                const currentMbps = bitsInWindow / 1000000;
+                const bitsPerSecond = windowBytes * 8;
+                const currentMbps = bitsPerSecond / 1000000;
                 
-                // Reset the window bucket immediately for the next second interval
+                // Reset the window bucket immediately for the next second
                 windowBytes = 0;
 
-                // Render live calculated speed
-                document.getElementById('speed').innerHTML = `5P33D: <span class="highlight">${currentMbps.toFixed(2)} Mbp5</span>`;
-                
-                // Update the gauge needle position
-                // Mapping speed from 0 Mbps to a 200 Mbps scale into a -90 deg to +90 deg arc
-                const maxExpectedSpeed = 200; 
-                let degrees = (currentMbps / maxExpectedSpeed) * 180 - 90;
-                if (degrees > 90) degrees = 90; // Pin needle at absolute max max out
-                if (degrees < -90) degrees = -90;
-                
-                document.getElementById('needle').style.transform = `translateX(-50%) rotate(${degrees}deg)`;
+                // Update UI with the speed calculation from the last 1 second
+                document.getElementById('speed').innerText = `${currentMbps.toFixed(2)} Mbps`;
             }, 1000);
         }
 
         function stopSpeedometer() {
             clearInterval(speedIntervalId);
-            document.getElementById('needle').style.transform = `translateX(-50%) rotate(-90deg)`;
-            document.getElementById('speed').innerHTML = `5P33D: <span class="highlight">0.00 Mbp5</span>`;
+            document.getElementById('speed').innerText = "0.00 Mbps";
             windowBytes = 0;
         }
 
-        function toggleWasting() {
+        function toggleMonitor() {
             const btn = document.getElementById('toggleBtn');
             const status = document.getElementById('status');
             
-            isWasting = !isWasting;
+            isRunning = !isRunning;
             
-            if (isWasting) {
-                totalBytesWasted = 0; 
+            if (isRunning) {
+                totalBytes = 0; 
                 windowBytes = 0;
                 
-                btn.innerText = "570P 7357";
-                btn.style.background = "#ffa502";
-                btn.style.boxShadow = "0 0 12px #ffa502";
-                status.innerText = "5747U5: 73571NG_";
+                btn.innerText = "Stop Monitor";
+                btn.classList.add('active');
+                status.innerText = "Running";
+                status.style.color = "#28a745";
                 
                 startSpeedometer();
-                wasteData();
+                startDownloadLoop();
             } else {
-                isWasting = false;
-                btn.innerText = "1N171473 7357";
-                btn.style.background = "#ff0055";
-                btn.style.boxShadow = "0 0 12px #ff0055";
-                status.innerText = "5747U5: C0MPL373";
+                btn.innerText = "Start Monitor";
+                btn.classList.remove('active');
+                status.innerText = "Stopped";
+                status.style.color = "#dc3545";
                 
                 stopSpeedometer();
             }
