@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Data Waster</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #121212; color: white; }
+        button { padding: 15px 30px; font-size: 18px; cursor: pointer; background: #ff4757; color: white; border: none; border-radius: 5px; }
+        button:disabled { background: #555; }
+        #status { margin-top: 20px; font-size: 20px; color: #2ed573; }
+    </style>
+</head>
+<body>
+
+    <h1>Data Burner Utility</h1>
+    <p>This tool continuously downloads files to consume cellular or network data.</p>
+    
+    <button id="toggleBtn" onclick="toggleWasting()">Start Wasting Data</button>
+    <div id="status">Status: Idle</div>
+    <div id="counter">Total Wasted: 0 MB</div>
+
+    <script>
+        let isWasting = false;
+        let totalBytesWasted = 0;
+        // A reliable 100MB public test file link (provided by Cloudflare)
+        const targetUrl = 'https://speed.cloudflare.com/__down?bytes=104857600'; 
+
+        async function wasteData() {
+            while (isWasting) {
+                try {
+                    // Cache-busting: Appending a unique timestamp so the browser downloads it fresh every single time
+                    const uniqueUrl = `${targetUrl}&t=${Date.now()}`;
+                    
+                    const response = await fetch(uniqueUrl);
+                    if (!response.ok) throw new Error("Download failed");
+
+                    const reader = response.body.getReader();
+                    
+                    // Read the data stream chunk by chunk, tracking the size but doing absolutely nothing with the data
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        
+                        if (isWasting) {
+                            totalBytesWasted += value.length;
+                            document.getElementById('counter').innerText = `Total Wasted: ${(totalBytesWasted / (1024 * 1024)).toFixed(2)} MB`;
+                        } else {
+                            await reader.cancel(); // Abort if user hits stop mid-download
+                            break;
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error wasting data:", error);
+                    // Short pause before retrying on failure to avoid freezing the browser thread
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+        }
+
+        function toggleWasting() {
+            const btn = document.getElementById('toggleBtn');
+            const status = document.getElementById('status');
+            
+            isWasting = !isWasting;
+            
+            if (isWasting) {
+                btn.innerText = "Stop Wasting Data";
+                btn.style.background = "#ffa502";
+                status.innerText = "Status: Wasting data actively...";
+                wasteData();
+            } else {
+                btn.innerText = "Start Wasting Data";
+                btn.style.background = "#ff4757";
+                status.innerText = "Status: Stopped";
+            }
+        }
+    </script>
+</body>
+</html>
