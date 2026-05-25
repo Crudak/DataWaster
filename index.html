@@ -24,6 +24,7 @@
             background: #151515;
             box-shadow: 0 0 15px rgba(57, 255, 20, 0.2);
             border-radius: 8px;
+            min-width: 350px;
         }
         button { 
             padding: 15px 30px; 
@@ -37,17 +38,43 @@
             border-radius: 3px;
             box-shadow: 0 0 10px #ff0055;
             transition: all 0.2s ease;
+            margin-bottom: 15px;
         }
         button:hover {
             transform: scale(1.05);
         }
         #status { margin-top: 25px; font-size: 22px; color: #00ffff; text-shadow: 0 0 5px #00ffff; }
+        
+        /* Streaming visual effect */
+        .stream-bar {
+            width: 100%;
+            height: 4px;
+            background: #222;
+            margin: 15px 0;
+            overflow: hidden;
+            position: relative;
+            display: none;
+        }
+        .stream-bar::after {
+            content: '';
+            position: absolute;
+            left: -150%;
+            width: 150%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, #39ff14, transparent);
+            animation: streaming 0.8s linear infinite;
+        }
+        @keyframes streaming {
+            0% { left: -150%; }
+            100% { left: 100%; }
+        }
+
         .stats-grid {
             margin-top: 20px;
             font-size: 18px;
             display: grid;
             grid-template-columns: 1fr;
-            gap: 10px;
+            gap: 12px;
             text-align: left;
             width: fit-content;
             margin-left: auto;
@@ -64,6 +91,8 @@
         
         <button id="toggleBtn" onclick="toggleWasting()">1N171473 d0wnl04d</button>
         
+        <div id="streamIndicator" class="stream-bar"></div>
+
         <div id="status">5747U5: 1DL3</div>
         
         <div class="stats-grid">
@@ -77,46 +106,42 @@
         let totalBytesWasted = 0;
         let startTime = null;
         
-        // 100MB test payload from Cloudflare
+        // 100MB chunk payload from Cloudflare
         const targetUrl = 'https://speed.cloudflare.com/__down?bytes=104857600'; 
 
         async function wasteData() {
             while (isWasting) {
                 try {
-                    // Cache-buster timestamp
-                    const uniqueUrl = `${targetUrl}&t=${Date.now()}`;
+                    // Generate a cache-buster string so the browser never uses local cache
+                    const uniqueUrl = `${targetUrl}&t=${Date.now()}_${Math.random()}`;
                     
                     const response = await fetch(uniqueUrl);
                     if (!response.ok) throw new Error("D0wnl04d bR0k3n");
 
                     const reader = response.body.getReader();
                     
-                    while (true) {
+                    while (isWasting) {
                         const { done, value } = await reader.read();
-                        if (done) break;
+                        if (done) break; // Finished this 100MB chunk, loop will instantly start the next one
                         
-                        if (isWasting) {
-                            totalBytesWasted += value.length;
-                            
-                            // Calculate metrics
-                            const elapsedSeconds = (Date.now() - startTime) / 1000;
-                            const totalMB = totalBytesWasted / (1024 * 1024);
-                            
-                            // Mbps formula: (Total Bits / 1,000,000) / Elapsed Seconds
-                            const totalBits = totalBytesWasted * 8;
-                            const currentMbps = elapsedSeconds > 0 ? (totalBits / 1000000) / elapsedSeconds : 0;
+                        totalBytesWasted += value.length;
+                        
+                        // Calculate live metrics down to the millisecond
+                        const elapsedSeconds = (Date.now() - startTime) / 1000;
+                        const totalMB = totalBytesWasted / (1024 * 1024);
+                        
+                        // Mbps formula: (Total Bits / 1,000,000) / Elapsed Seconds
+                        const totalBits = totalBytesWasted * 8;
+                        const currentMbps = elapsedSeconds > 0 ? (totalBits / 1000000) / elapsedSeconds : 0;
 
-                            // Update UI elements
-                            document.getElementById('counter').innerHTML = `7074L BURN3D: <span class="highlight">${totalMB.toFixed(2)} MB</span>`;
-                            document.getElementById('speed').innerHTML = `CUMUL471V3 5P33D: <span class="highlight">${currentMbps.toFixed(2)} Mbp5</span>`;
-                        } else {
-                            await reader.cancel();
-                            break;
-                        }
+                        // UI Updates dynamically on every micro-packet
+                        document.getElementById('counter').innerHTML = `7074L BURN3D: <span class="highlight">${totalMB.toFixed(2)} MB</span>`;
+                        document.getElementById('speed').innerHTML = `CUMUL471V3 5P33D: <span class="highlight">${currentMbps.toFixed(2)} Mbp5</span>`;
                     }
                 } catch (error) {
                     console.error("3rr0r w4571ng d474:", error);
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    // Prevent thread locking if connection fails
+                    await new Promise(resolve => setTimeout(resolve, 500));
                 }
             }
         }
@@ -124,11 +149,11 @@
         function toggleWasting() {
             const btn = document.getElementById('toggleBtn');
             const status = document.getElementById('status');
+            const indicator = document.getElementById('streamIndicator');
             
             isWasting = !isWasting;
             
             if (isWasting) {
-                // Reset session timers for clean Mbps calculations
                 startTime = Date.now();
                 totalBytesWasted = 0; 
                 
@@ -136,12 +161,15 @@
                 btn.style.background = "#ffa502";
                 btn.style.boxShadow = "0 0 10px #ffa502";
                 status.innerText = "5747U5: d0wnl04d1ng_";
+                indicator.style.display = "block";
+                
                 wasteData();
             } else {
                 btn.innerText = "1N171473 d0wnl04d";
                 btn.style.background = "#ff0055";
                 btn.style.boxShadow = "0 0 10px #ff0055";
                 status.innerText = "5747U5: h4l73d";
+                indicator.style.display = "none";
             }
         }
     </script>
