@@ -98,59 +98,82 @@
     <script>
         let isRunning = false;
         let totalBytes = 0;
-        let windowBytes = 0;
+        
+        // Sliding window tracking mechanics
+        let lastReportedBytes = 0;
+        let currentWindowBytes = 0;
         let speedIntervalId = null;
+        let xhr = null;
         
         // High-speed 100MB public file provided by Cloudflare
         const targetUrl = 'https://speed.cloudflare.com/__down?bytes=104857600'; 
 
-        async function startDownloadLoop() {
-            while (isRunning) {
-                try {
-                    // Unique parameter ensures the browser never caches the download
-                    const uniqueUrl = `${targetUrl}&t=${Date.now()}_${Math.random()}`;
-                    const response = await fetch(uniqueUrl);
-                    if (!response.ok) throw new Error("Connection interrupted");
+        function downloadNextChunk() {
+            if (!isRunning) return;
 
-                    const reader = response.body.getReader();
-                    
-                    while (isRunning) {
-                        const { done, value } = await reader.read();
-                        if (done) break; 
-                        
-                        totalBytes += value.length;
-                        windowBytes += value.length; // Accumulate data for the 1-second speed window
-                        
-                        // Live update total data counter chunk-by-chunk
-                        const totalMB = totalBytes / (1024 * 1024);
-                        document.getElementById('counter').innerText = `${totalMB.toFixed(2)} MB`;
-                    }
-                } catch (error) {
-                    console.error("Loop error:", error);
-                    // Brief pause on error to avoid freezing the tab
-                    await new Promise(resolve => setTimeout(resolve, 500));
+            xhr = new XMLHttpRequest();
+            const uniqueUrl = `${targetUrl}&t=${Date.now()}_${Math.random()}`;
+            
+            xhr.open('GET', uniqueUrl, true);
+            lastReportedBytes = 0; // Reset progress marker for the brand new file stream
+
+            xhr.onprogress = function(event) {
+                if (!isRunning) {
+                    xhr.abort();
+                    return;
                 }
-            }
+
+                if (event.loaded) {
+                    // Isolate exactly how many new bytes arrived since the last onprogress tick
+                    const incomingBytes = event.loaded - lastReportedBytes;
+                    lastReportedBytes = event.loaded;
+
+                    // Add the new incoming slice to both pools
+                    totalBytes += incomingBytes;
+                    currentWindowBytes += incomingBytes;
+
+                    // Update total data counter on screen instantly as packets land
+                    const totalMB = totalBytes / (1024 * 1024);
+                    document.getElementById('counter').innerText = `${totalMB.toFixed(2)} MB`;
+                }
+            };
+
+            xhr.onload = function() {
+                if (isRunning) {
+                    downloadNextChunk(); // Instantly start the next file chunk
+                }
+            };
+
+            xhr.onerror = function() {
+                if (isRunning) {
+                    setTimeout(downloadNextChunk, 500); // Retry if network drops
+                }
+            };
+
+            xhr.send();
         }
 
-        // Calculates speed exactly every 1000ms (sliding window approach)
+        // True sliding window speedometer (Runs once every 1000ms)
         function startSpeedometer() {
             speedIntervalId = setInterval(() => {
-                const bitsPerSecond = windowBytes * 8;
+                const bitsPerSecond = currentWindowBytes * 8;
                 const currentMbps = bitsPerSecond / 1000000;
                 
-                // Reset the window bucket immediately for the next second
-                windowBytes = 0;
+                // Reset ONLY the speed window bucket, leaving totalBytes untouched
+                currentWindowBytes = 0;
 
-                // Update UI with the speed calculation from the last 1 second
+                // Update UI with network transfer speed
                 document.getElementById('speed').innerText = `${currentMbps.toFixed(2)} Mbps`;
             }, 1000);
         }
 
         function stopSpeedometer() {
             clearInterval(speedIntervalId);
+            if (xhr) {
+                xhr.abort();
+            }
             document.getElementById('speed').innerText = "0.00 Mbps";
-            windowBytes = 0;
+            currentWindowBytes = 0;
         }
 
         function toggleMonitor() {
@@ -161,7 +184,7 @@
             
             if (isRunning) {
                 totalBytes = 0; 
-                windowBytes = 0;
+                currentWindowBytes = 0;
                 
                 btn.innerText = "Stop Monitor";
                 btn.classList.add('active');
@@ -169,16 +192,5 @@
                 status.style.color = "#28a745";
                 
                 startSpeedometer();
-                startDownloadLoop();
+                downloadNextChunk();
             } else {
-                btn.innerText = "Start Monitor";
-                btn.classList.remove('active');
-                status.innerText = "Stopped";
-                status.style.color = "#dc3545";
-                
-                stopSpeedometer();
-            }
-        }
-    </script>
-</body>
-</html>
